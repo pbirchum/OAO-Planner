@@ -4058,8 +4058,8 @@ function renderAdminCourses() {
       '<td>' + typePill + reqPill + '</td>' +
       '<td><small class="text-muted">' + desc + '</small></td>' +
       '<td style="white-space:nowrap;">' +
-        '<button class="btn btn-xs btn-secondary" onclick="openEditCourseModal('' + c.id + '')">&#x270F; Edit</button> ' +
-        '<button class="btn btn-xs btn-danger" onclick="deleteCourse('' + c.id + '')">&#x1F5D1;</button>' +
+        '<button class="btn btn-xs btn-secondary" onclick="openEditCourseModal(\' + c.id + \')">&#x270F; Edit</button> ' +
+        '<button class="btn btn-xs btn-danger" onclick="deleteCourse(\' + c.id + \')">&#x1F5D1;</button>' +
       '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No courses found.</td></tr>';
 }
@@ -4221,9 +4221,9 @@ function renderAdminStaff() {
 
     const actions = admin.isHardcoded
       ? '<span style="font-size:12px;color:var(--text-muted);">Full access &mdash; managed in code</span>'
-      : '<button class="btn btn-secondary btn-sm" onclick="openAssignStudentsModal('' + admin.id + '')">&#x1F465; Assign Students</button> ' +
-        '<button class="btn btn-secondary btn-sm" onclick="openAddAdminModal('' + admin.id + '')">&#x270F; Edit</button> ' +
-        '<button class="btn btn-danger btn-sm" onclick="deleteAdminAccount('' + admin.id + '')">&#x1F5D1;</button>';
+      : '<button class="btn btn-secondary btn-sm" onclick="openAssignStudentsModal(\' + admin.id + \')">&#x1F465; Assign Students</button> ' +
+        '<button class="btn btn-secondary btn-sm" onclick="openAddAdminModal(\' + admin.id + \')">&#x270F; Edit</button> ' +
+        '<button class="btn btn-danger btn-sm" onclick="deleteAdminAccount(\' + admin.id + \')">&#x1F5D1;</button>';
 
     return '<div class="card mb-3">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
