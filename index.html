@@ -1936,17 +1936,45 @@ function loadFirebase() {
 
 async function initFirebase() {
   if (!isFirebaseConfigured()) { CONFIG.demoMode = true; return; }
+
+  // ── Safety net ──────────────────────────────────────────────────
+  // If Firebase doesn't resolve auth state within 7 seconds
+  // (e.g. Auth not yet enabled, network slow, script blocked),
+  // fall through to the localStorage login screen so the user
+  // is never stuck on the loading screen.
+  let authSettled = false;
+  const safetyTimer = setTimeout(() => {
+    if (!authSettled) {
+      console.warn('OAO: Firebase auth did not respond in time — falling back to login screen');
+      CONFIG.demoMode = true;
+      if (!tryRestoreSession()) showLoginScreen();
+    }
+  }, 7000);
+
   try {
     await loadFirebase();
+    if (CONFIG.demoMode) {
+      // loadFirebase hit an error (script blocked / offline)
+      clearTimeout(safetyTimer);
+      if (!tryRestoreSession()) showLoginScreen();
+      return;
+    }
     if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebase);
     db   = firebase.firestore();
     auth = firebase.auth();
     CONFIG.demoMode = false;
-    auth.onAuthStateChanged(handleAuthStateChange);
+    auth.onAuthStateChanged(user => {
+      if (authSettled) return;
+      authSettled = true;
+      clearTimeout(safetyTimer);
+      handleAuthStateChange(user);
+    });
   } catch(e) {
-    console.warn("Firebase init error:", e);
+    authSettled = true;
+    clearTimeout(safetyTimer);
+    console.warn("OAO: Firebase init error —", e.message || e);
     CONFIG.demoMode = true;
-    showLoginScreen();
+    if (!tryRestoreSession()) showLoginScreen();
   }
 }
 
@@ -3939,12 +3967,13 @@ function boot() {
   initCourses();
   initAdminAccounts();
   if (!isFirebaseConfigured()) {
+    // No Firebase config — use localStorage immediately
     setTimeout(() => { if (!tryRestoreSession()) showLoginScreen(); }, 600);
     return;
   }
-  initFirebase().then(() => {
-    if (CONFIG.demoMode) { setTimeout(() => { if (!tryRestoreSession()) showLoginScreen(); }, 600); }
-  });
+  // Firebase configured — initFirebase handles the login/session flow,
+  // including the 7-second safety timeout fallback.
+  initFirebase();
 }
 
 if (document.readyState === 'loading') {
@@ -4357,42 +4386,6 @@ function saveStudentAssignments() {
 
 </script>
 
-<!-- ===================================================================
-  OAO ACADEMIC PLANNER - SETUP INSTRUCTIONS
-
-  ADMIN LOGIN:
-    Email:    pbirchum@optimaed.com
-    Password: domi2022
-
-  FIREBASE IS NOW CONFIGURED for project: oao-planner
-  Data will sync across devices automatically.
-
-  FIRESTORE SECURITY RULES (paste into Firebase Console > Firestore > Rules):
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /students/{studentId} {
-          allow read, write: if request.auth != null && (
-            request.auth.uid == studentId ||
-            request.auth.token.email.matches('.*@optimaed\.com') ||
-            request.auth.token.email.matches('.*@optimaacademy\.online')
-          );
-          match /{sub=**} {
-            allow read, write: if request.auth != null && (
-              request.auth.uid == studentId ||
-              request.auth.token.email.matches('.*@optimaed\.com') ||
-              request.auth.token.email.matches('.*@optimaacademy\.online')
-            );
-          }
-        }
-      }
-    }
-
-  GITHUB + FIREBASE HOSTING:
-    npm install -g firebase-tools
-    firebase login
-    firebase init hosting  (public dir = ".")
-    firebase deploy --only hosting
-=================================================================== -->
+<!-- OAO Planner - Firebase project: oao-planner | Admin: pbirchum@optimaed.com -->
 </body>
 </html>
